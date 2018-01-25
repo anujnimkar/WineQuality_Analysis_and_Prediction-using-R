@@ -1,0 +1,856 @@
+---
+title: "Red Wine Data Exploration"
+author: "Anuj Nimkar"
+date: "" 
+output: html_document  
+---
+
+Project Overview - This is an exploration of 1599 samples of red wine. Our main purpose of carrying out the exploration of the given data set is that, we need to figure out which factors among the given set of factors are the most influential ones in deciding the quality of the wine. Such kind of an analysis could help a decision maker (Management of a Wine selling company) to take a decision on how much should they invest, in which wine ingredients. Also, it can give them an overview about the quality of their current product. 
+  
+### Analysis  
+
+### Set the working directory and load the data   
+
+```{r}
+ 
+setwd('F:/Anuj/Study & Work/Data Analytics/EDA using R/Final Project')
+redWineData <- read.csv('wineQualityReds.csv', sep = ',')
+
+ 
+```
+
+### Summary of the data set
+ 
+```{r}
+dim(redWineData)
+
+names(redWineData)
+ 
+str(redWineData)
+ 
+summary(redWineData)
+
+```
+
+### Observations from the summary
+
+-> The amount of citric acid in the red wine varies mostly between 0 and 1.0.
+
+-> 75% of the red wines have residual sugar content less than 2.6 in them
+but there are a few outliers whose residual sugar content can go right 
+upto 15.5
+
+-> The ingredients which are used in least amounts are sulphates, chlorides, citric acids and volatile acids.  
+ 
+-> The quality mostly hovers between 3 to 8, with the Mean being 5.6.
+ 
+From the given summary results we have a few quantifiable results but none of them are leading us to any kind of causation yet. In order to surge ahead in that direction, we will need to explore the variables(ingredients) individually in univariate, bi-variate and multi-variate styles.  
+
+### Understanding the distribution of single variables
+I am going to analyze a few single variable distributions now. I am majorly going to be using histograms to represent my plot results.  
+ 
+Fixed acidity
+ 
+```{r}
+
+library(ggplot2)
+qplot(data = redWineData, fixed.acidity)
+   
+```
+
+Lets just refine our plot a bit
+
+```{r}
+
+qplot( data = redWineData, 
+       fixed.acidity, 
+       binwidth = 0.3,
+       fill = I('#099DD9'), 
+       color = I('black')
+       ) +  
+  scale_x_continuous(breaks = seq(0,16,1), limits = c(0,16))  
+
+
+```
+
+This looks good
+
+```{r}
+min(redWineData$fixed.acidity) 
+max(redWineData$fixed.acidity)
+
+```
+
+Conclusion - Quite big groups of the wine samples have a fixed acidity between 6 to 10.0. There is no sample having a fixed acidity of 0, in fact the least fixed acidity is 4.6 and the highest is 15.9 
+
+```{r}
+max_fa_redWineData <- subset(redWineData, 
+                             redWineData$fixed.acidity >= 6.0 &  redWineData$fixed.acidity <= 10.0)  
+
+nrow(max_fa_redWineData)
+nrow(redWineData)
+
+```
+
+About 80% of the samples have a fixed acidity between 6.0 to 10.0.  
+
+
+Volatile acidity
+ 
+```{r}
+
+max(redWineData$volatile.acidity)
+min(redWineData$volatile.acidity)
+
+qplot(data = redWineData, volatile.acidity)
+
+qplot(data = redWineData, 
+      volatile.acidity,
+      color = I('black'), 
+      fill = I('#099DD9'),
+      binwidth = 0.03
+      ) +  
+  scale_x_continuous(breaks = seq(0,2,0.1)) 
+  
+```
+
+Conclusion - Majorityof the wine samples have a volatile acidity between 0.3  to 0.7. There is no sample having a volatile acidity of 0. There are very few samples having volatile acidity above 1. Most of the samples have a volatile acidity less than 1.0.  
+
+Let us just verify our claims about volatile acidity. 
+
+```{r}
+max_va_redWineData <- subset(redWineData, 
+                             redWineData$volatile.acidity >= 0.3 &  redWineData$volatile.acidity <= 0.7) 
+
+nrow(max_va_redWineData) 
+ 
+```
+
+Ok, now the above figures verify our claims. About 79% of the wine samples have a volatile acidity between 0.3  to 0.7. 
+
+Ok..Let me just check the quality of the samples
+
+```{r}
+ 
+qplot( data = redWineData,
+       x = quality
+     ) + 
+  scale_x_continuous(breaks = seq(0,10,1), limits = c(0,10)) + 
+  scale_y_continuous(breaks = seq(0,700,50),limits = c(0,700))
+
+max_quality_redWineData <- subset(redWineData, 
+                                  redWineData$quality == 5 | redWineData$quality == 6
+                                 )  
+
+nrow(max_quality_redWineData)
+
+ 
+```
+
+Now this one really answers a few important questions. More than 82% of the wine samples have either a 5 or 6 quality on a scale of 1 to 10. Not even a single sample has a 0,1,2,9,10 quality. 
+
+Ideally as a wine company owner I would want majority of my samples to have a quality of more than 8, but then it would also depend a lot upon costing and profit-margins and other business factors
+ 
+The above results lead us to a correlation between the acidity and the quality of the wines. There is a high correlation between the quality being 5 and 6 when the volatile acidity between 0.3 to 0.7 and fixed acidity between 6.0 to 10.0. But correlation does not necessarily lead to causation. Meaning that, the results of acidity might or might not be responsible for the quality being 5 and 6. 
+
+In order to be confident about the above correlation we will need to subset data with volatile acidity 0.3 and 0.7 and fixed acidity between 6.0 to 10.0 and check the quality of that data. Lets do that 
+ 
+```{r}
+
+guess_data1 <- subset(max_va_redWineData, 
+                     max_va_redWineData$quality == 5 | max_va_redWineData$quality == 6) 
+guess_data2 <- subset(max_fa_redWineData, 
+                     max_fa_redWineData$quality == 5 | max_fa_redWineData$quality == 6
+                     ) 
+ 
+nrow(guess_data1)
+nrow(guess_data2)
+
+```
+
+Our assumption is verified. Approximately 80% of the wine samples that have volatile acidity between 0.3 and 0.7 and fixed acidity between 6.0 to 10.0 have a quality that is either 5 or 6.    
+
+### Faceting
+ 
+Let's analyse the residual sugar content in the wines faceted by quality. This would give us a fair idea about the distribution of residual sugar content across the different quality levels. 
+   
+```{r}
+qplot( data = redWineData,
+       x = residual.sugar,
+       binwidth = 0.6,
+       color = I('black'),
+       fill = I('#099DD9')
+     ) +  
+  scale_x_continuous(breaks = seq(0,16,1)) +
+  facet_wrap(~quality)
+ 
+max(redWineData$residual.sugar)
+
+```
+
+The distribution of residual sugar is prominently seen in the facets showing quality 5 and 6. Most of these wines (having quality 5 and 6) have  residual sugar content under 5.   
+
+Exploring the free sulphur dioxide using frequency polygon. 
+ 
+```{r}
+qplot( data = redWineData,
+       x = free.sulfur.dioxide,
+     ) + 
+   scale_x_continuous(breaks = seq(0,75,5))  
+ 
+```
+
+Majority of the samples have a free sulfur dioxide content under 30. 
+
+Now we are seeing a long tail here after free sulfur dioxide goes beyond 40. Lets add a log transformation to our code to address this issue.
+
+```{r}
+library(scales)
+
+qplot( data = redWineData,
+       x = free.sulfur.dioxide,
+     ) + 
+   scale_x_continuous(trans = log10_trans(), breaks = seq(1,70,7)) + 
+  scale_y_continuous(breaks = seq(0,140,10))
+
+```
+
+There are very few samples having free sulfur dioxude more than 35
+
+Lets try the same variable with frequency polygon
+
+### Frequency polygon
+
+```{r}
+
+qplot( data = redWineData,
+       x = free.sulfur.dioxide,
+       geom = 'freqpoly',
+     ) + 
+  scale_x_continuous(breaks = seq(0,75,5))
+ 
+```
+
+Conclusion - Majority of the samples have a free sulfur dioxide content under 30. 
+
+```{r}
+fsd_under30 <- subset(redWineData, free.sulfur.dioxide <= 30)
+nrow(fsd_under30)
+
+```
+
+Our freq polygon results are verified. Approximately 90% of the samples have a free sulfur dioxide value under 30. 
+
+### Box Plots
+
+Lets try to check out the quality of the samples against the alcohol content. 
+
+```{r}
+ 
+qplot(data = redWineData,
+      x = quality,
+      y = alcohol,
+      geom = 'boxplot',
+    )
+
+``` 
+
+Here we will need to factor the variable quality first
+ 
+### Factorisation   
+
+```{r}
+
+redWineData$qualityfact <- factor(redWineData$quality,
+                                  levels = c('1','2','3','4','5','6','7','8','9','10')
+                                 )  
+
+library(RColorBrewer)
+
+qplot(data = redWineData,
+      x = qualityfact,
+      y = alcohol,
+      geom = 'boxplot',
+      binwidth = 0.1,
+      fill = factor(quality),
+      xlab = "quality"
+      ) + 
+  scale_fill_brewer(type = "qual")
+    
+  
+ 
+```
+ 
+ 
+Conclusion : Median alcohol content is highest for the samples with quality 8  
+
+Lets verify those results attained through the box plots
+
+```{r}
+by(redWineData$alcohol,redWineData$quality,summary)
+ 
+```
+
+Our results from the box-plot analysis are verified. Median alcohol content is indeed on the higher side for wines with high quality. 
+
+Lets test the impact of density on quality of the samples
+  
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,density, fill = qualityfact)    
+      ) +
+  geom_boxplot() +
+  xlab("Quality")
+
+
+```
+
+What we observe from the above plots is that, the median density is highest for the quality level 3 and in general, density of the samples goes on decreasing as the quality goes on increasing.
+ 
+Now, lets test the impact of sulphate proportion on the quality of the samples
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,sulphates, fill = qualityfact)     
+      ) +
+  geom_boxplot() +
+  xlab("Quality")
+
+```
+
+What we see here is that as the quality goes on increasing the median content of sulphates goes on increasing. 
+
+
+### Revisiting the analysis goals 
+  
+Let's just get back to our purpose of doing this analysis.
+Let's put our-self in the shoes of the Product Manager, for a moment. As a product manager, I would be interested in maximizing the quality of my product, the wine in this case and minimizing the cost of production. Such, data analysis of our current set of products and it's ingredients can help me immensely as a Product Manager. I know a few important things
+
+1. Current status of my products(quality, cost etc)
+2. Contribution of the ingredients in deriving the kind of quality that     they are deriving.
+3. Possibilities of cost-cutting, in case we come up with an analysis that shows that too much of attention is being given to a costlier ingredient when, we can do away with cheaper ones, without having to sacrifice the quality much.  
+
+We have figured out from our univariate analysis that all the ingredients influence the quality of the redwine in some or the other ways. But in order to find out the ingredients which predominantly affect the quality of the redwine,
+we need to perform a bivariate analysis of these variables along with the quality 
+
+### Bivariate analysis using ggplot syntax
+
+Fixed Acidity Vs Quality
+
+```{r}
+ 
+ggplot( data = redWineData,
+        aes(qualityfact, fixed.acidity, fill = qualityfact),
+      ) +
+  geom_boxplot() + 
+  xlab("Quality")  
+
+```
+
+ 
+From the above box-plots, it is clear that fixed acidity remains fairly constant over all the quality levels.
+
+
+Volatile acidity VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, volatile.acidity, fill = qualityfact),
+      ) +
+  geom_boxplot() + 
+  xlab("Quality")
+
+```
+
+As the volatile acidity decreases the quality of the wine goes on increasing. 
+
+Citric acid VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, citric.acid, fill = qualityfact),
+      ) +
+  geom_boxplot() + 
+  xlab("Quality")  
+```
+
+The quality of the redwines tends to have an increasing trend with an increase in citric acid.  
+
+Residual sugar VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, residual.sugar, fill = qualityfact), 
+      ) +
+  geom_boxplot() + 
+  xlab("Quality") + 
+  scale_y_continuous(breaks = seq(0,16,1))
+
+```
+
+Here , we can guess that the residual sugar is more or less at the same level but 
+the output is kinda squished because of the large number of outliers. Lets bring the focus on the box plots.  
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, residual.sugar, fill = qualityfact), 
+      ) +
+  geom_boxplot() + 
+  xlab("Quality") + 
+  scale_y_continuous(breaks = seq(0,16,1), limits = c(0,4))
+ 
+```
+  
+The above box-plots show that, the amount of residual sugar remains fairly constant through all the quality levels.  
+
+Chlorides VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, chlorides, fill = qualityfact)
+      ) + 
+  geom_boxplot() + 
+  xlab("Quality") + 
+  scale_y_continuous(breaks = seq(0,0.2,0.01), limits = c(0,0.2))
+
+
+```
+
+The above box-plots show that, the amount of chlorides remains fairly constant through all the quality levels.  
+ 
+Free sulphur dioxide VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,free.sulfur.dioxide, fill = qualityfact)
+      ) +  
+  geom_boxplot() + 
+  xlab("Quality")
+
+```
+ 
+The amount of free sulphur dioxide varies across different quality levels.  
+  
+Total Sulphur dioxide VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,total.sulfur.dioxide, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality")
+
+
+```
+
+The trend of total sulphur dioxide is very similar to that of free sulphur dioxide w.r.t quality.  
+ 
+ 
+Density VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,density, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality") 
+
+```
+
+The density gradually decreases, as the quality goes on increasing. 
+
+pH vs Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,pH, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality") 
+
+
+```
+
+sulphates VS Quality
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact, sulphates, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality")  
+```
+
+With a steady increase in quality, increase in sulphates.   
+ 
+alcohol VS quality 
+
+```{r}
+ggplot( data = redWineData,
+        aes(qualityfact,alcohol,fill = qualityfact)
+      ) + 
+  geom_boxplot() + 
+  scale_y_continuous(breaks = seq(0,16,1)) + 
+  xlab("Quality") 
+
+```
+
+What we see from the above plots is that, as the quality goes on improving the median alcohol content goes on increasing
+ 
+
+Our analysis so far has been carried out with quality being the response variable and other variables being the predictor variables.  
+
+Some of the variables have a strong impact on the quality of redwine while some don't. However, it's not clear from the analysis so far, whether these variables independently have an impact on the quality of the redwine or not. Is it because of the combination with some other variable, that the impact is created or not. We cannot be certain as of now about whether the impact is independent or not.
+
+After doing a bit of research on the internet , I figured that chi-squared test could be a correct way to figure out which amongst the above variables have a dependency between them. 
+
+However chi-squared test is more suitable for identifying relationships between samples of the population.
+
+We will have to test the interdependency between the factors affecting the quality of the redwine. A correlation coefficient matrix would come in handy for that purpose.  
+
+```{r}
+ 
+library(GGally)
+set.seed(1000)
+good_quality_subset <- good_quality[,c(2:12)]  
+
+ggpairs(redWineData[sample.int(nrow(redWineData), ), ], 
+        title = "Interdependency between the ingredients"
+       )   
+   
+```
+
+The following pairs of ingredients have a relatively strong correlation 
+
+1. Fixed Acidity and Citric Acid(+ve correlation)
+2. Fixed Acidity and Density(+ve correlation)
+3. Fixed Acidity and pH(-ve correlation)
+4. Free Sulphur Dioxide and Total Sulphur Dioxide(+ve correlation)  
+
+This indicates that if one of the above factors affects the quality of the red wine then its impact is supplemented by the other factor that it has a strong correlation with. 
+
+ 
+Thus, we reach some of the following conclusions,
+- In order to improve the quality of the redwine, we need to increase the fixed acidity with a subtle increase in the citric acid. However,I am yet to figure out the proportion of citric acid that needs to be increased with Fixed acidity.  
+
+- In order to improve the quality of the redwine, we need to increase the fixed acidity with a subtle increase in the density. However,I am yet to figure out the proportion of density that needs to be increased with Fixed acidity.  
+ 
+ 
+Now that we have figured out that there is strong correlation between some of the ingredients, we know that value of one can help us in predicting the value of another. Linear regression could help us the recognize the change that needs to be brought up in one variable given a change in another variable. 
+
+```{r}
+
+ggplot( data = redWineData,
+        aes(fixed.acidity, citric.acid, color = qualityfact),
+      ) + 
+  geom_point()
+ 
+```
+
+The above scatterplot clearly indicates a linear dependency between fixed acidity and citric acid. 
+
+```{r}
+
+linearModel1  <- lm(redWineData$fixed.acidity ~ redWineData$citric.acid)
+plot(redWineData$fixed.acidity ~ redWineData$citric.acid, main = 'Linear Model 1')
+abline(linearModel1,col = "red")
+
+summary(linearModel1)
+
+```
+
+Since the p-value is less than 0.05(assuming the alpha = 0.05),  we reject the null hypothesis that, there is no dependency between fixed acidity and citric acid. In other words we conclude that there is a linear dependency between fixed acidity and citric acid.   
+
+fixed.acidity = 6.692 + citric.acid*6.003
+ 
+Using the above equation, we can predict the fixed acidity given we have a citric acid content. The above equation can help us add fixed acidity and citric acid in a measured way in order to improve the quality of red wine samples that we have. 
+
+Similarly let us build some more linear models based on the results we have from the correlation matrix
+
+```{r}
+
+ggplot( data = redWineData,
+        aes(fixed.acidity, density, color = qualityfact),
+      ) + 
+  geom_point()
+
+```
+
+
+Here again, we see a similar pattern of linear dependency between fixed acidity and density.
+
+```{r}
+linearModel2 <- lm(redWineData$fixed.acidity ~ redWineData$density)
+plot(redWineData$fixed.acidity ~ redWineData$density, main = 'Linear Model 2')
+abline(linearModel2,col = "red")
+
+summary(linearModel2)
+
+```
+
+Since the p-value is less than 0.05(assuming the alpha = 0.05),  we reject the null hypothesis that, there is no dependency between fixed acidity and density.
+
+
+fixed.acidity = -605.96 + density * 616.28
+
+Using the above equation, we can predict the fixed acidity using the density
+
+```{r}
+ggplot(data = redWineData,
+       aes(fixed.acidity, pH, color = qualityfact)
+      ) + 
+  geom_point()
+
+```
+
+Now here is another interesting trend. We see a linear dependency between fixed acidity and pH. But it is a negative linear dependency.
+
+```{r}
+
+linearModel3 <- lm(redWineData$fixed.acidity ~ redWineData$pH)
+plot(redWineData$fixed.acidity ~ redWineData$pH, main = 'linear Model 3')
+abline(linearModel3, col = "red")
+
+summary(linearModel3)
+
+```
+
+Since the p-value is less than 0.05(assuming the alpha = 0.05),  we reject the null hypothesis that, there is no dependency between fixed acidity and pH.
+
+
+fixed.acidity = 33.822 + pH*(-7.702)
+
+Above equation indicates a negative linear dependency between fixed acidity and pH. In other words value of fixed acidity can be increasingly predicted with a decreasing value of pH
+
+```{r}
+
+ggplot( data = redWineData,
+         aes(total.sulfur.dioxide,free.sulfur.dioxide,color = qualityfact)
+       ) + 
+  geom_point()
+
+
+```
+
+```{r}
+linearModel4 <- lm(redWineData$free.sulfur.dioxide ~ redWineData$total.sulfur.dioxide)
+
+plot(redWineData$free.sulfur.dioxide~redWineData$total.sulfur.dioxide, main = 'Linear Model4')
+abline(linearModel4, col = "red")
+
+
+summary(linearModel4)
+```
+
+Since the p-value is less than 0.05(assuming the alpha = 0.05),  we reject the null hypothesis that, there is no dependency between free and total sulfur dioxide.
+
+free.sulfur.dioxide = 6.009 + 0.212 * total.sulfur.dioxide
+
+Above equation helps us in predicting the free sulphur dioxde given the total sulfur dioxide. 
+
+Let us just review our work so far. We started off, with uni-variate analysis then moved to bi-variate analysis with quality as one of the two variables. Here, we noticed certain ingredients having a strong impact on the quality of the redwines. This led us to a conclusion that the following variables have a strong impact on the quality of the redwines.
+-> Fixed acidity
+-> Citric acid
+-> Density
+-> pH
+-> Free sulfur dioxide
+-> Total sulfur dioxide
+
+In order to figure out how, the impact happens in tandem, we built a correlation coefficient matrix. This led us to the understanding that certain pairs of ingredients have a strong inter-dependency between themselves. This led us further to building predictive linear model equations between these variables. These equations will help us in predicting the amounts of ingredients that we should add in order to improve the quality of the red wines.  
+
+ 
+Now lets find out the collective impact of the above mentioned ingredients on the quality of the redwines through multiple regression linear model equation
+
+```{r}
+ 
+linearModelQuality <- lm(redWineData$quality ~ redWineData$fixed.acidity + redWineData$citric.acid + redWineData$density + redWineData$pH + redWineData$free.sulfur.dioxide + redWineData$total.sulfur.dioxide)
+
+summary(linearModelQuality)
+ 
+```
+
+The above linear model translates into the following equation which can help us in predicting the values that are needed to be added in order to generate the desired quality level.
+
+Quality = (1.808e + 02) + [(1.506e-01)*fixed.acidity] + [(1.031e+00)*citric.acid] + [(-1.795e + 02) * density] + [(6.900e-01)*pH] +[(1.406e-02)*free.sulfur.dioxide] + [(-5.130e-03)*total.sulfur,dioxide]
+
+The following factors help us in expanding our knowledge of the linear model that we have generated. 
+
+```{r}
+coefficients(linearModelQuality)
+
+```
+
+Coefficents gives us the list of coefficients generated in our linear model.
+
+```{r}
+confint(linearModelQuality, level = 0.95)
+
+```
+
+Confint gives us the confidence interval with an error tolerance of 0.05% because we have specified the confidence level to be 95%. 
+
+```{r}
+fitted(linearModelQuality)
+```
+
+Fitted gives us the predicted values of all the variables with out multi-linear predictive modelling equation.  
+
+```{r}
+residuals(linearModelQuality)
+```
+
+The residuals function gives us the amount of deviation from the linear model generated.  
+
+Let us build some additional density plots in order to gain more information on our dataset  
+ 
+### Cutting a variable
+
+Let us cut the variable quality in order to distribute the samples over buckets of variable quality
+
+```{r}
+
+redWineData$quality_bucket <- cut(redWineData$quality,c(1,3,6,8,10),
+                                  labels = c('1-3','3-6','6-8','8-10')
+                                  )  
+
+```
+
+### Density plots
+
+Lets create density plots for a few of the variables   
+  
+```{r}
+
+library(gridExtra)
+
+p1 <- ggplot( data = redWineData,
+              aes(alcohol,color = quality_bucket)
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+
+p2 <- ggplot( data = redWineData,
+              aes(pH,color = quality_bucket)
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+ 
+p3 <- ggplot( data = redWineData,
+              aes(fixed.acidity,color = quality_bucket)
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+ 
+p4 <- ggplot( data = redWineData,
+              aes(volatile.acidity,color = quality_bucket)
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+ 
+p5 <- ggplot( data = redWineData,
+              aes(sulphates,color = quality_bucket) 
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+
+p6 <- ggplot( data = redWineData,
+              aes(residual.sugar,color = quality_bucket)
+            ) +   
+  geom_density() + 
+  scale_color_brewer(palette = "Spectral")
+
+grid.arrange(p1,p2,p3,p4,p5,p6,ncol = 2) 
+ 
+```
+ 
+The above plots show the distribution of various ingredients over their respective quality buckets.   
+ 
+ 
+### Sampling
+
+Sampling is'nt going to help us much here, because we don't really have any trends to analyze in this data set. It's just a dataset of 1599 unique wines.  
+ 
+
+### Final Plots and Summary
+
+### Plot 1
+
+```{r}
+library(gridExtra)
+
+p1 <- ggplot( data = redWineData,
+        aes(qualityfact, fixed.acidity, fill = qualityfact),
+      ) +
+  geom_boxplot() + 
+  xlab("Quality") 
+
+
+p2 <- ggplot( data = redWineData,
+        aes(qualityfact, citric.acid, fill = qualityfact),
+      ) +
+  geom_boxplot() + 
+  xlab("Quality")
+
+p3 <- ggplot( data = redWineData,
+        aes(qualityfact,density, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality")
+
+p4 <- ggplot( data = redWineData,
+        aes(qualityfact,pH, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality") 
+
+p5 <- ggplot( data = redWineData,
+        aes(qualityfact,total.sulfur.dioxide, fill = qualityfact)
+      ) +  
+  geom_boxplot() +  
+  xlab("Quality")
+
+p6 <- ggplot( data = redWineData,
+        aes(qualityfact,free.sulfur.dioxide, fill = qualityfact)
+      ) +  
+  geom_boxplot() + 
+  xlab("Quality")
+ 
+grid.arrange(p1,p2,p3,p4,p5,p6,ncol=2)
+
+```
+
+The above box-plots indicate the ingredients which are prominently influencing the quality of the redwines. These results have been derived from the bi-variate analysis of quality vs the other factors. 
+
+### Plot 2 
+
+```{r}
+
+plot(redWineData$fixed.acidity ~ redWineData$citric.acid, main = 'Linear Model for Fixed acidity and citric acid')
+q1 <- abline(linearModel1,col = "red") 
+
+plot(redWineData$fixed.acidity ~ redWineData$density, main = 'Linear Model for Fixed acidity and density')
+q2 <- abline(linearModel2,col = "red")
+
+plot(redWineData$fixed.acidity ~ redWineData$pH, main = 'Linear Model for Fixed acidity and pH')
+q3 <- abline(linearModel3, col = "red")
+
+plot(redWineData$free.sulfur.dioxide~redWineData$total.sulfur.dioxide, main = 'Linear Model for freesulphurdioxide and totalsulfurdioxide')
+q4 <- abline(linearModel4, col = "red")
+
+grid.arrange(q1,q2,q3,q4,ncol=2)  
+library(gridExtra)
+
+```
+
+
+### Plot 3 
+
+```{r}
+
+```
+
+ 
+### Reflection  
+
+The red wine dataset contains information about 1599 red wines. I started out with single variate analysis. I analysed the impact of fixed acidity, volatile acidity, residual sugar content and free sulfur dioxide on the quality of the red wines. I came up with a few interesting results especially with respect to the impact of alcohol and volatile acidity on the quality of the wines. Then, I moved to bivariate analysis where in, I tried various permutations and combinations of the variables in the data and tried to analyse their impact on the quality of the wines. After that, I used various techniques of multivariate analysis to analyse the impact of the variables on the red wines. During this phase, I reached a deadlock on a few occasions, especially after creating the scatter plot matrix and reshaping the data in various ways. In order to get over this problem, I just went over my own analysis and decided to deepen my analysis of those variables that I knew had a solid impact on the quality(alcohol, pH,  volatile acidity). Due to time constraint, I could not include a linear model in my analysis. I believe that including predictive analytics would help clear the mist further.
+   
